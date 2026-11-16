@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automated Carrot Quality Detection & Sorting System</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <!-- Top Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top px-3">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="/">
+                <i class="bi bi-gear-wide-connected brand-icon"></i>
+                <div>
+                    <span class="fw-bold tracking-wide">CARROT-SORT AI</span>
+                    <small class="d-block text-secondary" style="font-size: 0.7rem;">M.E. Project: Deep Learning, Computer Vision & IoT</small>
+                </div>
+            </a>
+
+            <!-- System Telemetry Badge & Quick Controls -->
+            <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center px-3 py-1 glass-card me-2">
+                    <span id="systemStatusDot" class="status-dot active"></span>
+                    <span id="systemStatusText" class="fw-bold text-light" style="font-size: 0.8rem;">SYSTEM ACTIVE</span>
+                </div>
+
+                <button id="btnTriggerInspection" class="btn btn-warning btn-sm fw-semibold">
+                    <i class="bi bi-camera me-1"></i> Simulate IR Trigger
+                </button>
+
+                <div class="btn-group btn-group-sm">
+                    <button id="btnStartSystem" class="btn btn-outline-success" title="Resume Conveyor & Inspection">
+                        <i class="bi bi-play-fill"></i>
+                    </button>
+                    <button id="btnStopSystem" class="btn btn-outline-danger" title="Pause System">
+                        <i class="bi bi-pause-fill"></i>
+                    </button>
+                </div>
+
+                <a href="/manual" class="btn btn-outline-light btn-sm ms-2">
+                    <i class="bi bi-sliders me-1"></i> Hardware Controls
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container-fluid px-4 py-4">
+
+        <!-- KPI Metrics Row -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-2 col-sm-6">
+                <div class="glass-card kpi-card kpi-total">
+                    <div class="kpi-title"><i class="bi bi-bar-chart-fill me-1"></i> Total Inspected</div>
+                    <div class="kpi-value text-info" id="kpiTotal">0</div>
+                    <div class="kpi-subtext">All processed items</div>
+                </div>
+            </div>
+
+            <div class="col-md-2 col-sm-6">
+                <div class="glass-card kpi-card kpi-good">
+                    <div class="kpi-title"><i class="bi bi-check-circle-fill me-1"></i> Good Carrots</div>
+                    <div class="kpi-value text-success" id="kpiGood">0</div>
+                    <div class="kpi-subtext"><span id="kpiGoodPct">0%</span> -> Bin 1</div>
+                </div>
+            </div>
+
+            <div class="col-md-2 col-sm-6">
+                <div class="glass-card kpi-card kpi-damaged">
+                    <div class="kpi-title"><i class="bi bi-exclamation-triangle-fill me-1"></i> Damaged</div>
+                    <div class="kpi-value text-warning" id="kpiDamaged">0</div>
+                    <div class="kpi-subtext"><span id="kpiDamagedPct">0%</span> -> Bin 2</div>
+                </div>
+            </div>
+
+            <div class="col-md-2 col-sm-6">
+                <div class="glass-card kpi-card kpi-rotten">
+                    <div class="kpi-title"><i class="bi bi-x-circle-fill me-1"></i> Rotten</div>
+                    <div class="kpi-value text-danger" id="kpiRotten">0</div>
+                    <div class="kpi-subtext"><span id="kpiRottenPct">0%</span> -> Bin 3</div>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-12">
+                <div class="glass-card kpi-card kpi-eff">
+                    <div class="kpi-title"><i class="bi bi-lightning-charge-fill me-1"></i> Sorting Efficiency</div>
+                    <div class="kpi-value text-purple" id="kpiEfficiency">100%</div>
+                    <div class="kpi-subtext">Accurate 3-way bin classification rate</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Middle Row: Live Stream & Latest Inspected Item -->
+        <div class="row g-4 mb-4">
+            <!-- Live Camera Feed -->
+            <div class="col-lg-7">
+                <div class="glass-card p-3 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0 text-light">
+                            <i class="bi bi-camera-video me-2 text-primary"></i>Live Conveyor Video Feed
+                        </h6>
+                        <span id="cameraBadge" class="video-badge text-success">CAM: ONLINE</span>
+                    </div>
+
+                    <div class="video-container">
+                        <img src="/video_feed" class="video-stream" alt="Live Camera Feed"
+                             onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'640\' height=\'480\'><rect width=\'100%\' height=\'100%\' fill=\'%23111827\'/><text x=\'50%\' y=\'50%\' fill=\'%239CA3AF\' font-size=\'18\' text-anchor=\'middle\'>Waiting for video stream...</text></svg>';">
+                    </div>
+
+                    <!-- Telemetry status ribbon -->
+                    <div class="row mt-3 text-center g-2" style="font-size: 0.85rem;">
+                        <div class="col-4">
+                            <span class="text-secondary">Conveyor:</span>
+                            <span id="telemetryConvSpeed" class="fw-bold text-info ms-1">70% (0.14 m/s)</span>
+                        </div>
+                        <div class="col-4">
+                            <span class="text-secondary">Diverter Arm:</span>
+                            <span id="telemetryServoPos" class="fw-bold text-light ms-1">Neutral [0°]</span>
+                        </div>
+                        <div class="col-4">
+                            <span class="text-secondary">IR Sensor:</span>
+                            <span id="telemetryIrState" class="fw-bold text-success ms-1">BEAM CLEAR</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Latest Inspected Item Preview Card -->
+            <div class="col-lg-5">
+                <div class="glass-card p-3 h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold mb-0 text-light">
+                                <i class="bi bi-eye me-2 text-warning"></i>Latest Inspection Result
+                            </h6>
+                            <small class="text-secondary" id="latestTimestamp">--:--:--</small>
+                        </div>
+
+                        <div class="preview-img-container mb-3">
+                            <img id="latestPreviewImg" class="preview-img" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='320' height='200'><rect width='100%' height='100%' fill='%23111'/><text x='50%' y='50%' fill='%23666' font-size='14' text-anchor='middle'>Awaiting detection...</text></svg>" alt="Annotated Capture">
+                        </div>
+
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between text-secondary mb-1" style="font-size: 0.85rem;">
+                                <span>Quality Classification:</span>
+                                <span class="fw-bold text-light" id="latestClass">None</span>
+                            </div>
+                            <div class="d-flex justify-content-between text-secondary mb-2" style="font-size: 0.85rem;">
+                                <span>Confidence Probability:</span>
+                                <span class="fw-bold text-info" id="latestConfidence">0.0%</span>
+                            </div>
+                            <div class="progress">
+                                <div id="latestConfBar" class="progress-bar bg-success" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Physical Sorting Destination Banner -->
+                    <div class="p-3 mt-3 rounded border border-secondary bg-dark text-center">
+                        <small class="text-secondary d-block mb-1 text-uppercase" style="font-size: 0.75rem;">Assigned Physical Destination</small>
+                        <h5 class="fw-bold text-warning mb-0" id="latestBin">Awaiting Carrot...</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Charts Row -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-5">
+                <div class="glass-card p-3">
+                    <h6 class="fw-bold mb-3 text-light">
+                        <i class="bi bi-pie-chart-fill me-2 text-info"></i>Quality Tier Distribution
+                    </h6>
+                    <div style="height: 250px;">
+                        <canvas id="distributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="glass-card p-3">
+                    <h6 class="fw-bold mb-3 text-light">
+                        <i class="bi bi-graph-up me-2 text-cyan"></i>Throughput Rate (Detections / Hour)
+                    </h6>
+                    <div style="height: 250px;">
+                        <canvas id="throughputChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detection History Table -->
+        <div class="glass-card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0 text-light">
+                    <i class="bi bi-clock-history me-2 text-primary"></i>Recent Inspection & Sorting Logs
+                </h6>
+                <button id="btnClearHistory" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-trash3 me-1"></i> Reset Logs
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table custom-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Timestamp</th>
+                            <th>Quality Category</th>
+                            <th>Confidence</th>
+                            <th>Destination Bin</th>
+                            <th>Actuator Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detectionsTableBody">
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">Loading real-time inspection history...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Dashboard Controller JS -->
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

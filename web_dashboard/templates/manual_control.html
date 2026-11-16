@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hardware Calibration & Testing - Carrot Sorting System</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top px-3">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="/">
+                <i class="bi bi-arrow-left-circle brand-icon"></i>
+                <div>
+                    <span class="fw-bold tracking-wide">HARDWARE CALIBRATION WORKBENCH</span>
+                    <small class="d-block text-secondary" style="font-size: 0.7rem;">Manual Motor & Actuator Diagnostics</small>
+                </div>
+            </a>
+            <a href="/" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-speedometer2 me-1"></i> Back to Dashboard
+            </a>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+
+        <div class="row g-4">
+            <!-- 3-Way Physical Servo Diverter Testing -->
+            <div class="col-lg-6">
+                <div class="glass-card p-4 h-100">
+                    <h5 class="fw-bold mb-3 text-warning">
+                        <i class="bi bi-signpost-split me-2"></i>3-Way Servo Sorter Actuator Test
+                    </h5>
+                    <p class="text-secondary" style="font-size: 0.9rem;">
+                        Calibrate and verify physical diverter angles for all three collection bins and the reject chute.
+                    </p>
+
+                    <div class="d-grid gap-3 my-4">
+                        <button class="btn btn-outline-success p-3 text-start d-flex justify-content-between align-items-center" data-servo-bin="1">
+                            <div>
+                                <h6 class="mb-0 fw-bold"><i class="bi bi-box-seam me-2"></i>Test Bin 1 (Good Carrots)</h6>
+                                <small class="text-secondary">Drives servo diverter arm to 30°</small>
+                            </div>
+                            <span class="badge bg-success">30° Position</span>
+                        </button>
+
+                        <button class="btn btn-outline-warning p-3 text-start d-flex justify-content-between align-items-center" data-servo-bin="2">
+                            <div>
+                                <h6 class="mb-0 fw-bold"><i class="bi bi-box-seam me-2"></i>Test Bin 2 (Damaged Carrots)</h6>
+                                <small class="text-secondary">Drives servo diverter arm to 90°</small>
+                            </div>
+                            <span class="badge bg-warning text-dark">90° Position</span>
+                        </button>
+
+                        <button class="btn btn-outline-danger p-3 text-start d-flex justify-content-between align-items-center" data-servo-bin="3">
+                            <div>
+                                <h6 class="mb-0 fw-bold"><i class="bi bi-box-seam me-2"></i>Test Bin 3 (Rotten Carrots)</h6>
+                                <small class="text-secondary">Drives servo diverter arm to 150°</small>
+                            </div>
+                            <span class="badge bg-danger">150° Position</span>
+                        </button>
+
+                        <button class="btn btn-outline-secondary p-3 text-start d-flex justify-content-between align-items-center" data-servo-bin="0">
+                            <div>
+                                <h6 class="mb-0 fw-bold"><i class="bi bi-arrow-repeat me-2"></i>Return to Neutral / Reject Tray</h6>
+                                <small class="text-secondary">Resets diverter arm to 0° (Home)</small>
+                            </div>
+                            <span class="badge bg-secondary">0° (Home)</span>
+                        </button>
+                    </div>
+
+                    <div class="p-3 bg-dark rounded border border-secondary">
+                        <small class="text-secondary d-block">Current Diverter Angle & Destination:</small>
+                        <span id="telemetryServoPos" class="fw-bold text-info fs-6">Neutral [0°]</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conveyor Belt Motor Driver (L298N) -->
+            <div class="col-lg-6">
+                <div class="glass-card p-4 h-100">
+                    <h5 class="fw-bold mb-3 text-info">
+                        <i class="bi bi-sliders me-2"></i>Conveyor Motor Controls (L298N)
+                    </h5>
+                    <p class="text-secondary" style="font-size: 0.9rem;">
+                        Test DC geared motor PWM speed, forward/reverse drive, and velocity estimation.
+                    </p>
+
+                    <!-- Speed Slider -->
+                    <div class="my-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <label class="text-light fw-semibold">PWM Duty Cycle (Speed):</label>
+                            <span id="speedValueDisplay" class="fw-bold text-info">70%</span>
+                        </div>
+                        <input type="range" class="form-range" id="conveyorSpeedRange" min="20" max="100" value="70">
+                    </div>
+
+                    <!-- Motor Action Buttons -->
+                    <div class="row g-2 mb-4">
+                        <div class="col-6">
+                            <button id="btnConveyorStart" class="btn btn-success w-100 py-2">
+                                <i class="bi bi-play-fill me-1"></i> Start Forward
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button id="btnConveyorStop" class="btn btn-danger w-100 py-2">
+                                <i class="bi bi-stop-fill me-1"></i> Stop Motor
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Telemetry Stats -->
+                    <div class="p-3 bg-dark rounded border border-secondary mb-3">
+                        <div class="d-flex justify-content-between mb-1" style="font-size: 0.85rem;">
+                            <span class="text-secondary">Motor Telemetry:</span>
+                            <span id="telemetryConvSpeed" class="fw-bold text-light">RUNNING</span>
+                        </div>
+                        <div class="d-flex justify-content-between" style="font-size: 0.85rem;">
+                            <span class="text-secondary">Linear Velocity:</span>
+                            <span class="fw-bold text-info">0.14 m/s (14 cm/s)</span>
+                        </div>
+                    </div>
+
+                    <!-- IR Sensor Simulation -->
+                    <div class="p-3 glass-card text-center">
+                        <h6 class="fw-bold mb-2 text-warning"><i class="bi bi-broadcast-pin me-2"></i>Optical IR Sensor Check</h6>
+                        <div class="mb-2">
+                            <span class="text-secondary">Sensor State: </span>
+                            <span id="telemetryIrState" class="fw-bold text-success">BEAM CLEAR</span>
+                        </div>
+                        <button id="btnTriggerInspection" class="btn btn-sm btn-outline-warning">
+                            <i class="bi bi-lightning-charge me-1"></i> Trigger IR Beam Break Event
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Script -->
+    <script src="/static/js/dashboard.js"></script>
+    <script>
+        // Update slider value display
+        const speedRange = document.getElementById("conveyorSpeedRange");
+        const speedDisplay = document.getElementById("speedValueDisplay");
+        if (speedRange && speedDisplay) {
+            speedRange.addEventListener("input", (e) => {
+                speedDisplay.textContent = `${e.target.value}%`;
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+# YOLO11 Dataset Configuration for Carrot Quality Detection
+# Automated Carrot Quality Detection and Sorting System (M.E. Project)
+
+# Dataset root directory (relative to this file or training script execution)
+path: ../dataset
+
+# Sub-splits (relative to 'path')
+train: train/images
+val: val/images
+test: test/images
+
+# Number of classes
+nc: 3
+
+# Class names
+names:
+  0: Good_Carrot
+  1: Damaged_Carrot
+  2: Rotten_Carrot
